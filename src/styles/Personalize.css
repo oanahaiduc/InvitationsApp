@@ -1,0 +1,60 @@
+.personalize-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 20px;
+    background: #f3eeee;
+}
+
+.invitation-preview {
+    text-align: center;
+    max-width: 300px;
+}
+
+.invitation-preview img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.personalization-form {
+    max-width: 400px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: rgba(227, 216, 216, 0.38);
+}
+
+.personalization-form label {
+    display: block;
+    margin-top: 10px;
+}
+
+.personalization-form input,
+.personalization-form textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.error {
+    color: red;
+    font-size: 0.9em;
+}
+
+button {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    background-color: #5a3d2b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #775c47;
+}

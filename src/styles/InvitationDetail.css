@@ -1,0 +1,77 @@
+.invitationDetail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    background-color: #f3eeee;
+    min-height: 100vh;
+}
+
+.invitationDetail h1 {
+    font-size: 32px;
+    font-family: "Georgia", serif;
+    color: #5a3d2b;
+    margin-bottom: 10px;
+}
+
+.invitationDetail img {
+    width: 50%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    margin: 20px 0;
+}
+
+.invitationDetail h3 {
+    font-size: 22px;
+    color: #775c47;
+}
+
+.invitationDetail p {
+    font-size: 18px;
+    color: #333;
+    max-width: 600px;
+    line-height: 1.6;
+}
+
+
+.personalizeButton {
+    background-color: #5a3d2b; /* Dark brown color */
+    color: white;
+    font-size: 18px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 20px;
+}
+
+.personalizeButton:hover {
+    background-color: #775c47; /* Lighter brown color on hover */
+    transform: scale(1.05); /* Slightly scale the button on hover */
+}
+
+.personalizeButton:focus {
+    outline: none; /* Remove focus outline */
+}
+
+@media (max-width: 768px) {
+    .invitationDetail img {
+        width: 80%;
+    }
+
+    .invitationDetail h1 {
+        font-size: 28px;
+    }
+
+    .invitationDetail p {
+        font-size: 16px;
+    }
+
+    .personalizeButton {
+        font-size: 16px;
+        padding: 8px 16px;
+    }
+}
