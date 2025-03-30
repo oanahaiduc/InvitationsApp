@@ -23,10 +23,8 @@ function Cart() {
                         <div key={index} className="cart-item">
                             <img src={item.image} alt={item.name} />
                             <div className="cart-details">
-                                {/* Invitation Name */}
                                 <h3>{item.name}</h3>
 
-                                {/* Celebrant Name (Separate Line) */}
                                 <p><strong>Celebrant:</strong> {item.celebrantName}</p>
 
                                 <p><strong>Event Type:</strong> {item.eventType}</p>

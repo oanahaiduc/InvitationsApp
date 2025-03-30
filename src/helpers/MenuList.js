@@ -97,5 +97,4 @@ export const MenuList = [
         price: 1.3,
         details: "An elegant invitation model for an elegant wedding!"
     }
-
 ]

@@ -10,7 +10,7 @@ function Personalize() {
     const { addToCart } = useContext(CartContext);
 
     const [formData, setFormData] = useState({
-        celebrantName: "",  // Name of the person being celebrated
+        celebrantName: "",
         date: "",
         location: "",
         text: "",

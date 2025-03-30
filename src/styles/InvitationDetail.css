@@ -37,7 +37,7 @@
 
 
 .personalizeButton {
-    background-color: #5a3d2b; /* Dark brown color */
+    background-color: #5a3d2b;
     color: white;
     font-size: 18px;
     padding: 10px 20px;
@@ -49,12 +49,12 @@
 }
 
 .personalizeButton:hover {
-    background-color: #775c47; /* Lighter brown color on hover */
-    transform: scale(1.05); /* Slightly scale the button on hover */
+    background-color: #775c47;
+    transform: scale(1.05);
 }
 
 .personalizeButton:focus {
-    outline: none; /* Remove focus outline */
+    outline: none;
 }
 
 @media (max-width: 768px) {
