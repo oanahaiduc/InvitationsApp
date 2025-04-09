@@ -9,46 +9,112 @@ function Menu() {
     const [sortInvitations, setSortInvitations] = useState('price-asc');
     const [maxPrice, setMaxPrice] = useState('');
     const [filteredList, setFilteredList] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
     const [fakeInvitations, setFakeInvitations] = useState([]);
     const [isAdding, setIsAdding] = useState(false);
-    const [itemsPerPage, setItemsPerPage] = useState(6);
+    const [visibleCount, setVisibleCount] = useState(6);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [isServerDown, setIsServerDown] = useState(false);
     const fakeThreadRef = useRef(null);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/invitations');
-                let data = await response.json();
+                const res = await fetch('http://localhost:5000/api/invitations');
+                if (!res.ok) throw new Error('Server error');
 
-                if (maxPrice !== '') {
-                    data = data.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
-                }
+                const data = await res.json();
+                localStorage.setItem('cachedInvitations', JSON.stringify(data));
+                setIsServerDown(false);
 
-                if (sortInvitations === 'price-asc') data.sort((a, b) => a.totalPrice - b.totalPrice);
-                else if (sortInvitations === 'price-desc') data.sort((a, b) => b.totalPrice - a.totalPrice);
-                else if (sortInvitations === 'name-asc') data.sort((a, b) => a.name.localeCompare(b.name));
-                else if (sortInvitations === 'name-desc') data.sort((a, b) => b.name.localeCompare(a.name));
-
-                setFilteredList([...data, ...fakeInvitations]);
+                updateFilteredList(data);
+                syncPendingActions();
             } catch (err) {
-                console.error('Error fetching invitations:', err);
+                console.error('Server down or network error:', err);
+                setIsServerDown(true);
+
+                const cached = localStorage.getItem('cachedInvitations');
+                if (cached) {
+                    updateFilteredList(JSON.parse(cached));
+                } else {
+                    setFilteredList([]);
+                }
             }
         };
 
         fetchData();
     }, [sortInvitations, maxPrice, fakeInvitations]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filteredList, itemsPerPage]);
+    const syncPendingActions = async () => {
+        const pending = JSON.parse(localStorage.getItem('pendingActions') || '[]');
+        const synced = [];
+
+        for (const action of pending) {
+            try {
+                const res = await fetch(action.url, {
+                    method: action.method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: action.data ? JSON.stringify(action.data) : undefined
+                });
+
+                if (res.ok) {
+                    synced.push(action);
+                }
+            } catch (err) {
+                console.error('❌ Failed to sync:', action, err);
+            }
+        }
+
+        if (synced.length > 0) {
+            const remaining = pending.filter(a => !synced.includes(a));
+            localStorage.setItem('pendingActions', JSON.stringify(remaining));
+        }
+    };
+
+    const updateFilteredList = (data) => {
+        let filtered = [...data];
+
+        if (maxPrice !== '') {
+            filtered = filtered.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
+        }
+
+        if (sortInvitations === 'price-asc') filtered.sort((a, b) => a.totalPrice - b.totalPrice);
+        else if (sortInvitations === 'price-desc') filtered.sort((a, b) => b.totalPrice - a.totalPrice);
+        else if (sortInvitations === 'name-asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
+        else if (sortInvitations === 'name-desc') filtered.sort((a, b) => b.name.localeCompare(a.name));
+
+        setFilteredList([...filtered, ...fakeInvitations]);
+    };
 
     const minPrice = Math.min(...filteredList.map(i => i.totalPrice || i.price));
     const maxPriceVal = Math.max(...filteredList.map(i => i.totalPrice || i.price));
-    const totalPages = Math.ceil(filteredList.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentItems = filteredList.slice(startIndex, endIndex);
+    const currentItems = filteredList.slice(0, visibleCount);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const bottomReached =
+                window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
+
+            if (bottomReached && visibleCount < filteredList.length) {
+                setVisibleCount(prev => prev + 6);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [visibleCount, filteredList]);
 
     const generateFakeInvitation = () => ({
         name: faker.commerce.productName(),
@@ -94,9 +160,28 @@ function Menu() {
         setFakeInvitations([]);
     };
 
+    useEffect(() => {
+        const handleStorageChange = (e) => {
+            if (e.key === "menuSync") {
+                const cached = localStorage.getItem("cachedInvitations");
+                if (cached) {
+                    updateFilteredList(JSON.parse(cached));
+                }
+            }
+        };
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
+    }, []);
+
+
     return (
         <div className="menu">
             <h1 className="menuTitle">Our Invitations</h1>
+
+            <div className="statusBar">
+                <p>🌐 Network: <strong style={{ color: isOffline ? 'red' : 'green' }}>{isOffline ? 'Offline' : 'Online'}</strong></p>
+                <p>🖥️ Server: <strong style={{ color: isServerDown ? 'red' : 'green' }}>{isServerDown ? 'Down' : 'Up'}</strong></p>
+            </div>
 
             <div className="controls">
                 <label>Sort by:</label>
@@ -114,13 +199,6 @@ function Menu() {
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="Enter max price"
                 />
-
-                <label>Items per page:</label>
-                <select value={itemsPerPage} onChange={(e) => setItemsPerPage(Number(e.target.value))}>
-                    <option value={2}>2</option>
-                    <option value={4}>4</option>
-                    <option value={6}>6</option>
-                </select>
             </div>
 
             <div className="menuList">
@@ -133,22 +211,6 @@ function Menu() {
                     return <MenuItem key={i} {...item} price={price} highlightType={highlightType} />;
                 })}
             </div>
-
-            {totalPages > 1 && (
-                <div className="pagination">
-                    <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>Prev</button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                            key={page}
-                            className={page === currentPage ? 'active-page' : ''}
-                            onClick={() => setCurrentPage(page)}
-                        >
-                            {page}
-                        </button>
-                    ))}
-                    <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>Next</button>
-                </div>
-            )}
 
             <div className="faker-controls">
                 <h2>Test Real-Time Chart Updates</h2>
@@ -163,4 +225,4 @@ function Menu() {
     );
 }
 
-export default Menu
+export default Menu;

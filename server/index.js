@@ -6,6 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+console.log("✅ Setting up middleware...");
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(cors());
 app.use(bodyParser.json());
@@ -13,17 +14,24 @@ app.use(bodyParser.json());
 let invitations = [];
 let nextId = 1;
 
-const { MenuList } = require('./data/initialData');
+console.log("🔄 Trying to load initialData...");
+try {
+    const { MenuList } = require('./data/initialData');
+    console.log("✅ Loaded MenuList");
 
-invitations = MenuList.map(inv => ({
-    ...inv,
-    id: nextId++,
-    totalPrice: inv.price
-}));
+    invitations = MenuList.map(inv => ({
+        ...inv,
+        id: nextId++,
+        totalPrice: inv.price
+    }));
+
+    console.log(`✅ Initialized ${invitations.length} invitations`);
+} catch (error) {
+    console.error("❌ Failed to load initialData:", error);
+}
 
 function validateInvitation(data) {
     const errors = {};
-
     if (!data.name?.trim()) errors.name = "Name is required";
     if (!data.eventType?.trim()) errors.eventType = "Event type is required";
     if (!data.image?.trim()) errors.image = "Image is required";
@@ -37,13 +45,11 @@ function validateInvitation(data) {
     if (typeof data.quantity !== 'number' || data.quantity < 1) {
         errors.quantity = "Quantity must be at least 1";
     }
-
     return errors;
 }
 
 function validatePartialInvitation(data) {
     const errors = {};
-
     if ('name' in data && !data.name?.trim()) errors.name = "Name is required";
     if ('eventType' in data && !data.eventType?.trim()) errors.eventType = "Event type is required";
     if ('image' in data && !data.image?.trim()) errors.image = "Image is required";
@@ -57,7 +63,6 @@ function validatePartialInvitation(data) {
     if ('quantity' in data && (typeof data.quantity !== 'number' || data.quantity < 1)) {
         errors.quantity = "Quantity must be at least 1";
     }
-
     return errors;
 }
 
@@ -66,23 +71,13 @@ app.get('/api/invitations', (req, res) => {
         const { maxPrice, sortOrder, eventType } = req.query;
         let result = [...invitations];
 
-        if (maxPrice) {
-            result = result.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
-        }
+        if (maxPrice) result = result.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
+        if (eventType) result = result.filter(inv => inv.eventType === eventType);
 
-        if (eventType) {
-            result = result.filter(inv => inv.eventType === eventType);
-        }
-
-        if (sortOrder === 'price-asc') {
-            result.sort((a, b) => a.totalPrice - b.totalPrice);
-        } else if (sortOrder === 'price-desc') {
-            result.sort((a, b) => b.totalPrice - a.totalPrice);
-        } else if (sortOrder === 'name-asc') {
-            result.sort((a, b) => a.name.localeCompare(b.name));
-        } else if (sortOrder === 'name-desc') {
-            result.sort((a, b) => b.name.localeCompare(a.name));
-        }
+        if (sortOrder === 'price-asc') result.sort((a, b) => a.totalPrice - b.totalPrice);
+        else if (sortOrder === 'price-desc') result.sort((a, b) => b.totalPrice - a.totalPrice);
+        else if (sortOrder === 'name-asc') result.sort((a, b) => a.name.localeCompare(b.name));
+        else if (sortOrder === 'name-desc') result.sort((a, b) => b.name.localeCompare(a.name));
 
         res.json(result);
     } catch (err) {
@@ -93,19 +88,13 @@ app.get('/api/invitations', (req, res) => {
 app.get('/api/invitations/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const invitation = invitations.find(inv => inv.id === id);
-
-    if (!invitation) {
-        return res.status(404).json({ message: 'Invitation not found' });
-    }
-
+    if (!invitation) return res.status(404).json({ message: 'Invitation not found' });
     res.json(invitation);
 });
 
 app.post('/api/invitations', (req, res) => {
     const errors = validateInvitation(req.body);
-    if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
-    }
+    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
 
     const {
         name, eventType, image, details, celebrantName,
@@ -136,16 +125,9 @@ app.patch('/api/invitations/:id', (req, res) => {
     if (index === -1) return res.status(404).json({ message: "Invitation not found" });
 
     const errors = validatePartialInvitation(req.body);
-    if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
-    }
+    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
 
-    invitations[index] = {
-        ...invitations[index],
-        ...req.body,
-        id
-    };
-
+    invitations[index] = { ...invitations[index], ...req.body, id };
     res.json(invitations[index]);
 });
 
@@ -160,7 +142,7 @@ app.delete('/api/invitations/:id', (req, res) => {
 
 if (require.main === module) {
     app.listen(PORT, () => {
-        console.log(`Invitations API running on http://localhost:${PORT}`);
+        console.log(`🚀 Invitations API running on http://localhost:${PORT}`);
     });
 }
 

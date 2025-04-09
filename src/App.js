@@ -8,8 +8,10 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import InvitationDetail from "./pages/InvitationDetail";
 import Cart from "./pages/Cart";
+import Admin from "./pages/Admin";
 import Personalize from "./pages/Personalize";
 import {CartProvider} from "./helpers/CartProvider";
+
 
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
                 <Route exact path='/contact' element={<Contact /> }/>
                 <Route path="/invitation-detail" element={<InvitationDetail />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="/personalize-invitation" element={<Personalize />} />
             </Routes>
         </Router>

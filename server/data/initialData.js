@@ -82,5 +82,19 @@ exports.MenuList = [
         eventType: "wedding",
         price: 1.3,
         details: "An elegant invitation model for an elegant wedding!"
+    },
+    {
+        name: "Black And Gold Invitation",
+        image: "BlackAndGoldBirthday.png",
+        eventType: "birthday",
+        price: 1.5,
+        details: "La multi ani!"
+    },
+    {
+        name: "Roses Wedding Invitation",
+        image: "RosesWedding.png",
+        eventType: "wedding",
+        price: 1.8,
+        details: "A beautiful roses invitation for your wedding!"
     }
 ];

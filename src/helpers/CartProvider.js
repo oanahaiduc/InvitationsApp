@@ -1,9 +1,18 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        // Load cart from localStorage on initial load
+        const storedCart = localStorage.getItem("cart");
+        return storedCart ? JSON.parse(storedCart) : [];
+    });
+
+    // Save cart to localStorage every time it changes
+    useEffect(() => {
+        localStorage.setItem("cart", JSON.stringify(cart));
+    }, [cart]);
 
     const addToCart = (invitation) => {
         setCart((prevCart) => {
@@ -24,7 +33,7 @@ export const CartProvider = ({ children }) => {
     };
 
     const editInvitation = (invitation, navigate) => {
-        navigate('/personalize-invitation', { state: invitation });
+        navigate("/personalize-invitation", { state: invitation });
     };
 
     return (
