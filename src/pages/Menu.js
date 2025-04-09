@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MenuList } from '../helpers/MenuList';
 import MenuItem from '../components/MenuItem';
 import Charts from '../components/Charts';
 import { faker } from '@faker-js/faker';
 import { act } from 'react';
-import "../styles/Menu.css";
+import '../styles/Menu.css';
 
 function Menu() {
     const [sortInvitations, setSortInvitations] = useState('price-asc');
@@ -14,35 +13,38 @@ function Menu() {
     const [fakeInvitations, setFakeInvitations] = useState([]);
     const [isAdding, setIsAdding] = useState(false);
     const [itemsPerPage, setItemsPerPage] = useState(6);
-
-    const intervalRef = useRef(null);
-
-    const combinedList = [...MenuList, ...fakeInvitations];
+    const fakeThreadRef = useRef(null);
 
     useEffect(() => {
-        let updatedList = [...combinedList];
+        const fetchData = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/invitations');
+                let data = await response.json();
 
-        if (maxPrice !== '') {
-            updatedList = updatedList.filter(item => item.price <= parseFloat(maxPrice));
-        }
+                if (maxPrice !== '') {
+                    data = data.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
+                }
 
-        updatedList.sort((a, b) => {
-            if (sortInvitations === "price-asc") return a.price - b.price;
-            if (sortInvitations === "price-desc") return b.price - a.price;
-            if (sortInvitations === "name-asc") return a.name.localeCompare(b.name);
-            if (sortInvitations === "name-desc") return b.name.localeCompare(a.name);
-            return 0;
-        });
+                if (sortInvitations === 'price-asc') data.sort((a, b) => a.totalPrice - b.totalPrice);
+                else if (sortInvitations === 'price-desc') data.sort((a, b) => b.totalPrice - a.totalPrice);
+                else if (sortInvitations === 'name-asc') data.sort((a, b) => a.name.localeCompare(b.name));
+                else if (sortInvitations === 'name-desc') data.sort((a, b) => b.name.localeCompare(a.name));
 
-        setFilteredList(updatedList);
+                setFilteredList([...data, ...fakeInvitations]);
+            } catch (err) {
+                console.error('Error fetching invitations:', err);
+            }
+        };
+
+        fetchData();
     }, [sortInvitations, maxPrice, fakeInvitations]);
 
     useEffect(() => {
         setCurrentPage(1);
     }, [filteredList, itemsPerPage]);
 
-    const minPrice = Math.min(...filteredList.map(i => i.price));
-    const maxPriceVal = Math.max(...filteredList.map(i => i.price));
+    const minPrice = Math.min(...filteredList.map(i => i.totalPrice || i.price));
+    const maxPriceVal = Math.max(...filteredList.map(i => i.totalPrice || i.price));
     const totalPages = Math.ceil(filteredList.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -56,28 +58,38 @@ function Menu() {
         details: faker.commerce.productDescription()
     });
 
-    const toggleFakeAdding = () => {
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const startFakeGeneration = async () => {
+        setIsAdding(true);
+        while (true) {
+            if (!fakeThreadRef.current) break;
+            const newFake = generateFakeInvitation();
+
+            if (process.env.NODE_ENV === 'test') {
+                await act(() => {
+                    setFakeInvitations(prev => [...prev, newFake]);
+                });
+            } else {
+                setFakeInvitations(prev => [...prev, newFake]);
+            }
+
+            await sleep(2000);
+        }
+    };
+
+    const toggleFakeAdding = async () => {
         if (isAdding) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
+            fakeThreadRef.current = null;
             setIsAdding(false);
         } else {
-            intervalRef.current = setInterval(() => {
-                if (process.env.NODE_ENV === 'test') {
-                    act(() => {
-                        setFakeInvitations(prev => [...prev, generateFakeInvitation()]);
-                    });
-                } else {
-                    setFakeInvitations(prev => [...prev, generateFakeInvitation()]);
-                }
-            }, 2000);
-            setIsAdding(true);
+            fakeThreadRef.current = true;
+            await startFakeGeneration();
         }
     };
 
     const removeFakes = () => {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+        fakeThreadRef.current = null;
         setIsAdding(false);
         setFakeInvitations([]);
     };
@@ -113,11 +125,12 @@ function Menu() {
 
             <div className="menuList">
                 {currentItems.map((item, i) => {
+                    const price = item.totalPrice || item.price;
                     let highlightType = 'avg';
-                    if (item.price === minPrice) highlightType = 'min';
-                    if (item.price === maxPriceVal) highlightType = 'max';
+                    if (price === minPrice) highlightType = 'min';
+                    if (price === maxPriceVal) highlightType = 'max';
 
-                    return <MenuItem key={i} {...item} highlightType={highlightType} />;
+                    return <MenuItem key={i} {...item} price={price} highlightType={highlightType} />;
                 })}
             </div>
 
@@ -150,4 +163,4 @@ function Menu() {
     );
 }
 
-export default Menu;
+export default Menu

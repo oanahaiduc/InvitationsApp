@@ -60,7 +60,7 @@ function Personalize() {
     return (
         <div className="personalize-container">
             <div className="invitation-preview">
-                <h2>{invitation.name}</h2>  {/* Keep the original invitation name */}
+                <h2>{invitation.name}</h2>
                 <img src={invitation.image} alt={invitation.name} />
                 <p><strong>Event Type:</strong> {invitation.eventType}</p>
                 <p><strong>Price:</strong> ${invitation.price}</p>
