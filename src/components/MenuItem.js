@@ -1,17 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function MenuItem({ image, name, eventType, price, details, highlightType }) {
+function MenuItem({ image, name, eventType, Category, price, details, highlightType }) {
     const navigate = useNavigate();
 
-    const imageUrl = image.startsWith('http') ? image : `http://localhost:5000/assets/${image}`;
-
-    console.log('RAW image value:', image);
-    console.log('Constructed imageUrl:', imageUrl);
+    const imageUrl = image.startsWith('http')
+        ? image
+        : `${window.location.protocol}//${window.location.hostname}:5000/assets/${image}`;
 
     const handleClick = () => {
         navigate('/invitation-detail', {
-            state: { invitation: { name, image: imageUrl, eventType, price, details } }
+            state: {
+                invitation: {
+                    name,
+                    image: imageUrl,
+                    eventType: Category?.name || eventType,
+                    price,
+                    details
+                }
+            }
         });
     };
 
@@ -21,22 +28,16 @@ function MenuItem({ image, name, eventType, price, details, highlightType }) {
 
     return (
         <div className="menuItem">
-            <div className="imageContainer" style={{ backgroundImage: `url(${imageUrl})` }}>
-            </div>
-
+            <div className="imageContainer" style={{ backgroundImage: `url(${imageUrl})` }} />
             <h1>{name}</h1>
-            <h3>{eventType}</h3>
-
+            <h3>{Category?.name || eventType}</h3> {/* ← This line updated */}
             <p className="item-price">
                 ${price}
                 <span className={`price-badge badge-${highlightType}`}>
                     {labelText}
                 </span>
             </p>
-
-            <button className="plusButton" onClick={handleClick}>
-                +
-            </button>
+            <button className="plusButton" onClick={handleClick}>+</button>
         </div>
     );
 }

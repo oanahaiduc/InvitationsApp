@@ -2,6 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+const { faker } = require('@faker-js/faker');
+
+const { Invitation, Category, initDB, Op } = require('./database');
+const { MenuList } = require('./data/initialData');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,24 +17,28 @@ app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(cors());
 app.use(bodyParser.json());
 
-let invitations = [];
-let nextId = 1;
+initDB(MenuList);
 
-console.log("🔄 Trying to load initialData...");
-try {
-    const { MenuList } = require('./data/initialData');
-    console.log("✅ Loaded MenuList");
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'uploads'));
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({
+    storage,
+    limits: { fileSize: 500 * 1024 * 1024 }
+});
 
-    invitations = MenuList.map(inv => ({
-        ...inv,
-        id: nextId++,
-        totalPrice: inv.price
-    }));
-
-    console.log(`✅ Initialized ${invitations.length} invitations`);
-} catch (error) {
-    console.error("❌ Failed to load initialData:", error);
-}
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+    }
+    res.json({ message: 'Upload successful!', file: req.file });
+});
 
 function validateInvitation(data) {
     const errors = {};
@@ -36,14 +46,8 @@ function validateInvitation(data) {
     if (!data.eventType?.trim()) errors.eventType = "Event type is required";
     if (!data.image?.trim()) errors.image = "Image is required";
     if (!data.details?.trim()) errors.details = "Details are required";
-    if (!data.celebrantName?.trim()) errors.celebrantName = "Celebrant name is required";
-    if (!data.eventDate || !/^\d{4}-\d{2}-\d{2}$/.test(data.eventDate)) {
-        errors.eventDate = "Event date must be in YYYY-MM-DD format";
-    }
-    if (!data.eventLocation?.trim()) errors.eventLocation = "Event location is required";
-    if (!data.customText?.trim()) errors.customText = "Custom text is required";
-    if (typeof data.quantity !== 'number' || data.quantity < 1) {
-        errors.quantity = "Quantity must be at least 1";
+    if (typeof data.price !== 'number' || data.price <= 0) {
+        errors.price = "Price must be a positive number";
     }
     return errors;
 }
@@ -54,96 +58,180 @@ function validatePartialInvitation(data) {
     if ('eventType' in data && !data.eventType?.trim()) errors.eventType = "Event type is required";
     if ('image' in data && !data.image?.trim()) errors.image = "Image is required";
     if ('details' in data && !data.details?.trim()) errors.details = "Details are required";
-    if ('celebrantName' in data && !data.celebrantName?.trim()) errors.celebrantName = "Celebrant name is required";
-    if ('eventDate' in data && !/^\d{4}-\d{2}-\d{2}$/.test(data.eventDate)) {
-        errors.eventDate = "Event date must be in YYYY-MM-DD format";
-    }
-    if ('eventLocation' in data && !data.eventLocation?.trim()) errors.eventLocation = "Event location is required";
-    if ('customText' in data && !data.customText?.trim()) errors.customText = "Custom text is required";
-    if ('quantity' in data && (typeof data.quantity !== 'number' || data.quantity < 1)) {
-        errors.quantity = "Quantity must be at least 1";
+    if ('price' in data && (typeof data.price !== 'number' || data.price <= 0)) {
+        errors.price = "Price must be a positive number";
     }
     return errors;
 }
 
-app.get('/api/invitations', (req, res) => {
+app.get('/api/invitations', async (req, res) => {
     try {
         const { maxPrice, sortOrder, eventType } = req.query;
-        let result = [...invitations];
+        const where = {}; // Only show real invitations by default
+        const order = [];
 
-        if (maxPrice) result = result.filter(inv => inv.totalPrice <= parseFloat(maxPrice));
-        if (eventType) result = result.filter(inv => inv.eventType === eventType);
+        if (maxPrice) {
+            where.price = { [Op.lte]: parseFloat(maxPrice) };
+        }
 
-        if (sortOrder === 'price-asc') result.sort((a, b) => a.totalPrice - b.totalPrice);
-        else if (sortOrder === 'price-desc') result.sort((a, b) => b.totalPrice - a.totalPrice);
-        else if (sortOrder === 'name-asc') result.sort((a, b) => a.name.localeCompare(b.name));
-        else if (sortOrder === 'name-desc') result.sort((a, b) => b.name.localeCompare(a.name));
+        if (eventType) {
+            const category = await Category.findOne({ where: { name: eventType } });
+            if (category) where.CategoryId = category.id;
+            else return res.json([]);
+        }
 
-        res.json(result);
+        if (sortOrder === 'price-asc') order.push(['price', 'ASC']);
+        else if (sortOrder === 'price-desc') order.push(['price', 'DESC']);
+        else if (sortOrder === 'name-asc') order.push(['name', 'ASC']);
+        else if (sortOrder === 'name-desc') order.push(['name', 'DESC']);
+
+        const results = await Invitation.findAll({
+            where,
+            order,
+            include: Category
+        });
+
+        res.json(results);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-app.get('/api/invitations/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const invitation = invitations.find(inv => inv.id === id);
-    if (!invitation) return res.status(404).json({ message: 'Invitation not found' });
-    res.json(invitation);
+app.get('/api/invitations/:id', async (req, res) => {
+    try {
+        const invitation = await Invitation.findByPk(req.params.id, { include: Category });
+        if (!invitation) return res.status(404).json({ message: 'Invitation not found' });
+        res.json(invitation);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-app.post('/api/invitations', (req, res) => {
-    const errors = validateInvitation(req.body);
-    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
+app.post('/api/invitations', async (req, res) => {
+    const { name, eventType, image, details, price } = req.body;
+    const errors = {};
 
-    const {
-        name, eventType, image, details, celebrantName,
-        eventDate, eventLocation, customText, quantity, totalPrice
-    } = req.body;
+    if (!name?.trim()) errors.name = "Name is required";
+    if (!eventType?.trim()) errors.eventType = "Event type is required";
+    if (!image?.trim()) errors.image = "Image is required";
+    if (!details?.trim()) errors.details = "Details are required";
+    if (typeof price !== 'number' || price <= 0) errors.price = "Price must be a positive number";
 
-    const newInvitation = {
-        id: nextId++,
-        name,
-        eventType,
-        image,
-        details,
-        celebrantName,
-        eventDate,
-        eventLocation,
-        customText,
-        quantity,
-        totalPrice
-    };
+    if (Object.keys(errors).length) return res.status(400).json({ errors });
 
-    invitations.push(newInvitation);
-    res.status(201).json(newInvitation);
+    try {
+        const category = await Category.findOne({ where: { name: eventType } });
+        if (!category) return res.status(400).json({ message: "Invalid event type" });
+
+        const newInvitation = await Invitation.create({
+            name, image, details, price, CategoryId: category.id, isFake: false
+        });
+        res.status(201).json(newInvitation);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-app.patch('/api/invitations/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = invitations.findIndex(inv => inv.id === id);
-    if (index === -1) return res.status(404).json({ message: "Invitation not found" });
+app.patch('/api/invitations/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const invitation = await Invitation.findByPk(id);
+        if (!invitation) return res.status(404).json({ message: "Invitation not found" });
 
-    const errors = validatePartialInvitation(req.body);
-    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
+        const updateData = req.body;
+        if (updateData.eventType) {
+            const category = await Category.findOne({ where: { name: updateData.eventType } });
+            if (!category) return res.status(400).json({ message: "Invalid event type" });
+            updateData.CategoryId = category.id;
+        }
 
-    invitations[index] = { ...invitations[index], ...req.body, id };
-    res.json(invitations[index]);
+        await invitation.update(updateData);
+        res.json(invitation);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-app.delete('/api/invitations/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = invitations.findIndex(inv => inv.id === id);
-    if (index === -1) return res.status(404).json({ message: 'Invitation not found' });
-
-    const deleted = invitations.splice(index, 1);
-    res.json({ message: 'Deleted successfully', invitation: deleted[0] });
+app.delete('/api/invitations/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const invitation = await Invitation.findByPk(id);
+        if (!invitation) return res.status(404).json({ message: 'Invitation not found' });
+        await invitation.destroy();
+        res.json({ message: 'Deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`🚀 Invitations API running on http://localhost:${PORT}`);
+let fakeGenerationInterval = null;
+app.post('/api/fake/start', async (req, res) => {
+    if (fakeGenerationInterval) {
+        return res.status(400).json({ message: 'Fake generation already running' });
+    }
+
+    fakeGenerationInterval = setInterval(async () => {
+        const fake = {
+            name: faker.commerce.productName(),
+            image: "GreenGraduationInvitation.png",
+            eventType: faker.helpers.arrayElement(["birthday", "wedding", "graduation", "cocktail party"]),
+            price: parseFloat(faker.commerce.price({ min: 0.5, max: 4.99 })),
+            details: faker.commerce.productDescription(),
+        };
+
+        const category = await Category.findOne({ where: { name: fake.eventType } });
+        if (!category) return;
+
+        const newFake = await Invitation.create({
+            ...fake,
+            CategoryId: category.id,
+            isFake: true
+        });
+        const fullFake = await Invitation.findByPk(newFake.id, { include: Category });
+
+        io.emit('invitationUpdate', fullFake);
+    }, 2000);
+
+    res.json({ message: 'Fake generation started' });
+});
+
+app.post('/api/fake/pause', (req, res) => {
+    if (!fakeGenerationInterval) return res.status(400).json({ message: 'Fake generation is not running' });
+    clearInterval(fakeGenerationInterval);
+    fakeGenerationInterval = null;
+    res.json({ message: 'Fake generation paused' });
+});
+
+app.delete('/api/fake', async (req, res) => {
+    try {
+        const deleted = await Invitation.destroy({ where: { isFake: true } });
+        io.emit('fakeCleared');
+        res.json({ message: `Removed ${deleted} fake invitations` });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+io.on('connection', async (socket) => {
+    console.log('New client connected:', socket.id);
+    const invitations = await Invitation.findAll({ where: { isFake: false }, include: Category });
+    socket.emit('initialInvitations', invitations);
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
     });
-}
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Invitations API running on http://localhost:${PORT}`);
+});
 
 module.exports = app;

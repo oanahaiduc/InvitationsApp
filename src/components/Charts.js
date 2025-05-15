@@ -27,7 +27,8 @@ function Charts({ items = [], totalReal = 0 }) {
     useEffect(() => {
         const counts = {};
         items.forEach(item => {
-            counts[item.eventType] = (counts[item.eventType] || 0) + 1;
+            const type = item.Category?.name || 'undefined';
+            counts[type] = (counts[type] || 0) + 1;
         });
 
         setEventDistributionData({
@@ -41,6 +42,8 @@ function Charts({ items = [], totalReal = 0 }) {
                         'rgba(54,162,235,0.6)',
                         'rgba(255,206,86,0.6)',
                         'rgba(75,192,192,0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
                     ]
                 }
             ]
@@ -52,7 +55,7 @@ function Charts({ items = [], totalReal = 0 }) {
         const countPerType = {};
 
         items.forEach(item => {
-            const type = item.eventType;
+            const type = item.Category?.name || 'undefined';
             totalPricePerType[type] = (totalPricePerType[type] || 0) + item.price;
             countPerType[type] = (countPerType[type] || 0) + 1;
         });

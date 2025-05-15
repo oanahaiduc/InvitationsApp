@@ -51,6 +51,11 @@
     margin-bottom: 1rem;
 }
 
+.error-text {
+    color: red;
+    font-size: 12px;
+}
+
 .admin-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -76,6 +81,7 @@
     margin-bottom: 8px;
     padding: 6px;
     font-size: 14px;
+    width: 100%;
 }
 
 .admin-item button {
@@ -87,17 +93,43 @@
     cursor: pointer;
 }
 
-.admin-item button:nth-child(1) {
+.admin-item button.edit {
     background-color: #007bff;
     color: white;
 }
 
-.admin-item button:nth-child(2) {
+.admin-item button.delete {
     background-color: #dc3545;
     color: white;
 }
 
-.error-text {
-    color: red;
-    font-size: 12px;
+.pending-sync-label {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.fake-controls {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.fake-controls button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+}
+
+.upload-section {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.upload-section input[type="file"] {
+    margin-bottom: 0.5rem;
 }
