@@ -230,6 +230,13 @@ app.get('/api/top-categories', async (req, res) => {
     }
 });
 
+// This must be AFTER all your API routes
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -248,6 +255,8 @@ io.on('connection', async (socket) => {
         console.log('Client disconnected:', socket.id);
     });
 });
+
+
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Invitations API running on http://localhost:${PORT}`);
