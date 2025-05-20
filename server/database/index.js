@@ -86,7 +86,6 @@ const initDB = async (initialData) => {
         if (initialData && Array.isArray(initialData)) {
             const count = await Invitation.count();
             if (count === 0) {
-                // Step 1: Create unique categories
                 const uniqueCategories = [...new Set(initialData.map(item => item.eventType))];
                 const categoryMap = {};
 
@@ -95,7 +94,6 @@ const initDB = async (initialData) => {
                     categoryMap[name] = category.id;
                 }
 
-                // Step 2: Create invitations with proper categoryId
                 for (const item of initialData) {
                     await Invitation.create({
                         name: item.name,

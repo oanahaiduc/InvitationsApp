@@ -6,7 +6,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { faker } = require('@faker-js/faker');
 
-const { Invitation, Category, initDB, Op } = require('./database');
+
+const {sequelize, Invitation, Category, initDB, Op } = require('./database');
 const { MenuList } = require('./data/initialData');
 
 const app = express();
@@ -211,6 +212,24 @@ app.delete('/api/fake', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
+app.get('/api/top-categories', async (req, res) => {
+    try {
+        const results = await sequelize.query(`
+            SELECT c.name, COUNT(i.id) AS invitation_count
+            FROM "Invitations" i
+            JOIN "Categories" c ON i."CategoryId" = c.id
+            GROUP BY c.name
+            ORDER BY invitation_count DESC
+            LIMIT 10;
+        `, { type: sequelize.QueryTypes.SELECT });
+
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 
 const server = http.createServer(app);
 const io = new Server(server, {

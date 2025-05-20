@@ -68,7 +68,6 @@ function Admin() {
             try {
                 const res = await fetch(`${API_BASE}/api/ping`);
                 if (res.ok) {
-                    // Only update state if the previous state was down
                     if (isServerDown) {
                         console.info("Server is back up, attempting to sync pending actions.");
                         setIsServerDown(false);
@@ -100,7 +99,7 @@ function Admin() {
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
 
-        checkStatus();  // Initial status check
+        checkStatus();
 
         return () => {
             window.removeEventListener("online", handleOnline);
@@ -133,11 +132,9 @@ function Admin() {
                 if (res.ok) {
                     console.log(`Successfully synced action: ${action.url}`);
 
-                    // Handle POST requests differently to update the ID
                     if (action.method === "POST") {
                         const responseData = await res.json();
 
-                        // Update local cached invitations with the new ID from the server
                         const cached = JSON.parse(localStorage.getItem("cachedInvitations") || "[]");
                         const updated = cached.map(inv =>
                             inv.id === action.tempId ? { ...inv, id: responseData.id, temp: false } : inv
