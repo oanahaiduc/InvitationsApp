@@ -41,7 +41,7 @@ function Admin() {
 
     const fetchInvitations = async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/invitations`);
+            const res = await fetch(`${API_BASE}/invitations`);
             const serverData = await res.json();
             const cached = JSON.parse(localStorage.getItem("cachedInvitations") || "[]");
             const merged = mergeUniqueInvitations(serverData, cached);
@@ -66,7 +66,7 @@ function Admin() {
             }
 
             try {
-                const res = await fetch(`${API_BASE}/api/ping`);
+                const res = await fetch(`${API_BASE}/ping`);
                 if (res.ok) {
                     if (isServerDown) {
                         console.info("Server is back up, attempting to sync pending actions.");
@@ -199,7 +199,7 @@ function Admin() {
         const tempItem = { ...payload, id: tempId, temp: true };
 
         const addToPending = () => {
-            queuePendingAction({ method: "POST", url: `${API_BASE}/api/invitations`, data: payload }, tempId);
+            queuePendingAction({ method: "POST", url: `${API_BASE}/invitations`, data: payload }, tempId);
             const cached = JSON.parse(localStorage.getItem("cachedInvitations") || "[]");
             const updated = [...cached, tempItem];
             localStorage.setItem("cachedInvitations", JSON.stringify(updated));
@@ -213,7 +213,7 @@ function Admin() {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/api/invitations`, {
+            const res = await fetch(`${API_BASE}/invitations`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -242,7 +242,7 @@ function Admin() {
         const isTemp = String(id).startsWith("temp");
 
         const addToPendingDelete = () => {
-            queuePendingAction({ method: "DELETE", url: `${API_BASE}/api/invitations/${id}` });
+            queuePendingAction({ method: "DELETE", url: `${API_BASE}/invitations/${id}` });
             const updated = invitations.filter(inv => inv.id !== id);
             localStorage.setItem("cachedInvitations", JSON.stringify(updated));
             setInvitations(updated);
@@ -255,7 +255,7 @@ function Admin() {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/api/invitations/${id}`, { method: "DELETE" });
+            const res = await fetch(`${API_BASE}/invitations/${id}`, { method: "DELETE" });
 
             if (!res.ok) throw new Error(`Server responded with status: ${res.status}`);
 
@@ -296,7 +296,7 @@ function Admin() {
         const addToPendingEdit = () => {
             queuePendingAction({
                 method: "PATCH",
-                url: `${API_BASE}/api/invitations/${editingId}`,
+                url: `${API_BASE}/invitations/${editingId}`,
                 data: payload
             });
             const updated = invitations.map(inv =>
@@ -315,7 +315,7 @@ function Admin() {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/api/invitations/${editingId}`, {
+            const res = await fetch(`${API_BASE}/invitations/${editingId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -343,7 +343,7 @@ function Admin() {
         const formData = new FormData();
         formData.append("file", uploadFile);
         try {
-            const res = await fetch(`${API_BASE}/api/upload`, {
+            const res = await fetch(`${API_BASE}/upload`, {
                 method: "POST",
                 body: formData
             });
@@ -357,13 +357,13 @@ function Admin() {
     const handleToggleFake = async () => {
         const endpoint = isFakeGenerating ? "pause" : "start";
         if (isOffline) {
-            queuePendingAction({ method: "POST", url: `${API_BASE}/api/fake/${endpoint}` });
+            queuePendingAction({ method: "POST", url: `${API_BASE}/fake/${endpoint}` });
         } else {
             try {
-                const res = await fetch(`${API_BASE}/api/fake/${endpoint}`, { method: "POST" });
+                const res = await fetch(`${API_BASE}/fake/${endpoint}`, { method: "POST" });
                 if (!res.ok) throw new Error();
             } catch {
-                queuePendingAction({ method: "POST", url: `${API_BASE}/api/fake/${endpoint}` });
+                queuePendingAction({ method: "POST", url: `${API_BASE}/fake/${endpoint}` });
             }
         }
         setIsFakeGenerating(!isFakeGenerating);
@@ -371,13 +371,13 @@ function Admin() {
 
     const handleRemoveFakes = async () => {
         if (isOffline) {
-            queuePendingAction({ method: "DELETE", url: `${API_BASE}/api/fake` });
+            queuePendingAction({ method: "DELETE", url: `${API_BASE}/fake` });
         } else {
             try {
-                const res = await fetch(`${API_BASE}/api/fake`, { method: "DELETE" });
+                const res = await fetch(`${API_BASE}/fake`, { method: "DELETE" });
                 if (!res.ok) throw new Error();
             } catch {
-                queuePendingAction({ method: "DELETE", url: `${API_BASE}/api/fake` });
+                queuePendingAction({ method: "DELETE", url: `${API_BASE}/fake` });
             }
         }
         const updated = invitations.filter(inv => !inv.isFake);

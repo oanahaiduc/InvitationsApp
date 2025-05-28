@@ -10,8 +10,8 @@ const socket = io(BASE_URL.replace('/api', ''));
 function Menu() {
     const [sortInvitations, setSortInvitations] = useState('price-asc');
     const [maxPrice, setMaxPrice] = useState('');
-    const [invitations, setInvitations] = useState([]); // fetched from API
-    const [liveInvitations, setLiveInvitations] = useState([]); // appended live updates
+    const [invitations, setInvitations] = useState([]);
+    const [liveInvitations, setLiveInvitations] = useState([]);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [isServerDown, setIsServerDown] = useState(false);
     const [visibleCount, setVisibleCount] = useState(6);
@@ -29,7 +29,7 @@ function Menu() {
 
     const fetchData = async () => {
         try {
-        const res = await fetch(`${BASE_URL}/api/invitations`);
+        const res = await fetch(`${BASE_URL}/invitations`);
             if (!res.ok) throw new Error('Server error');
             const data = await res.json();
             setIsServerDown(false);
