@@ -3,9 +3,8 @@ import io from "socket.io-client";
 import MenuItem from '../components/MenuItem';
 import '../styles/Menu.css';
 
-const BASE_URL = `http://${window.location.hostname}:5000`; // Use backticks for template literal
-
-const socket = io(BASE_URL);
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const socket = io(BASE_URL.replace('/api', ''));
 
 
 function Menu() {
