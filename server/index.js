@@ -235,7 +235,6 @@ app.get('/api/top-categories', async (req, res) => {
     }
 });
 
-// This must be AFTER all your API routes
 app.use(express.static(path.join(__dirname, '../build')));
 
 app.get(/^\/(?!api).*/, (req, res) => {
