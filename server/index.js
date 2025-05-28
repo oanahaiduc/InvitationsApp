@@ -20,7 +20,7 @@ const corsOptions = {
 
 console.log("✅ Setting up middleware...");
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 initDB(MenuList);
@@ -245,7 +245,7 @@ app.get('/api/top-categories', async (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-    origin: process.env.FRONTEND_URL || 'https://invitations-app-olive.vercel.app/',
+    origin: process.env.FRONTEND_URL || 'https://invitations-app-olive.vercel.app',
         methods: ['GET', 'POST']
     }
 });

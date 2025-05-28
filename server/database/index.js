@@ -1,7 +1,7 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
-const dotenv = require('dotenv');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-dotenv.config();
 
 const sequelize = new Sequelize(
     process.env.DB_NAME || 'invitations_db',
