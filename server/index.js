@@ -19,7 +19,7 @@ const corsOptions = {
 };
 
 console.log("✅ Setting up middleware...");
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use('/assets', cors(corsOptions), express.static(path.join(__dirname, 'assets')));
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
