@@ -19,7 +19,9 @@
     "express": "^5.1.0",
     "multer": "^2.0.0",
     "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "pg": "^8.16.0",
+    "pg-hstore": "^2.3.4"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
