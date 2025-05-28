@@ -13,6 +13,11 @@ const { MenuList } = require('./data/initialData');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+};
+
 console.log("✅ Setting up middleware...");
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(cors());
