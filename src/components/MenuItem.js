@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 function MenuItem({ image, name, eventType, Category, price, details, highlightType }) {
     const navigate = useNavigate();
 
-    const imageUrl = image.startsWith('http')
-        ? image
-        : `${window.location.protocol}//${window.location.hostname}:5000/assets/${image}`;
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+    const imageUrl = image.startsWith('http') ? image : `${BACKEND_URL}/assets/${image}`;
 
     const handleClick = () => {
         navigate('/invitation-detail', {
