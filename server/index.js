@@ -235,17 +235,17 @@ app.get('/api/top-categories', async (req, res) => {
     }
 });
 
-app.use(express.static(path.join(__dirname, '../build')));
+//app.use(express.static(path.join(__dirname, '../build')));
 
-app.get(/^\/(?!api).*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
-});
+// app.get(/^\/(?!api).*/, (req, res) => {
+//     res.sendFile(path.join(__dirname, '../build', 'index.html'));
+// });
 
 
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*',
+    origin: process.env.FRONTEND_URL || 'https://invitations-app-olive.vercel.app/',
         methods: ['GET', 'POST']
     }
 });
